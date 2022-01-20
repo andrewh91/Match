@@ -463,7 +463,7 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 		gsUsername.setText(newUserText != null ? newUserText : "(none)");
 	}
 	private void prepareSkin() {
-		// A skin can be loaded via JSON or defined programmatically, either is fine. Using a skin is optional but
+		// skin can be loaded via JSON or defined programmatically, either is fine. Using a skin is optional but
 		// strongly
 		// recommended solely for the convenience of getting a texture, region, etc as a drawable, tinted drawable, etc.
 		skin = new Skin();

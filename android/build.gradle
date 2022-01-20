@@ -2,15 +2,23 @@ android {
     signingConfigs {
         config {
             storeFile file('C:\\Users\\Andrew Hughes\\AndroidStudioProjects\\MatchKeystore.jks')
-            storePassword 'password'
-            keyAlias 'MatchKey'
-            keyPassword 'password'
+            Properties keystoreProps = new Properties()
+            keystoreProps.load(new FileInputStream(file('C:\\Users\\Andrew Hughes\\AndroidStudioProjects\\Match\\keystore.config')))
+
+            keyAlias keystoreProps['keyAlias']
+            keyPassword keystoreProps['keyPassword']
+            storePassword keystoreProps['storePassword']
+
         }
         debug {
             storeFile file('C:\\Users\\Andrew Hughes\\AndroidStudioProjects\\MatchKeystore.jks')
-            storePassword 'password'
-            keyPassword 'password'
-            keyAlias 'MatchKeyDebug'
+            Properties keystoreProps = new Properties()
+            keystoreProps.load(new FileInputStream(file('C:\\Users\\Andrew Hughes\\AndroidStudioProjects\\Match\\keystore.config')))
+
+            keyAlias keystoreProps['keyAliasD']
+            keyPassword keystoreProps['keyPasswordD']
+            storePassword keystoreProps['storePasswordD']
+
         }
     }
     buildToolsVersion "29.0.2"
