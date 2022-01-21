@@ -2,9 +2,11 @@ package com.gmail.andrewahughes.match;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
@@ -19,6 +21,9 @@ import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
+
+import java.util.ArrayList;
+import java.util.Random;
 
 import de.golfgl.gdxgamesvcs.GameServiceException;
 import de.golfgl.gdxgamesvcs.IGameServiceClient;
@@ -42,6 +47,8 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 	public IGameServiceClient gsClient;
 	Skin skin;
 	Stage stage;
+	Stage gameStage;
+	ShapeRenderer shapeRenderer;
 	SpriteBatch batch;
 	Label gsStatus;
 	Label gsUsername;
@@ -49,51 +56,109 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 	private TextureAtlas atlas;
 	private TextField scoreFillin;
 	private TextField cloudData;
+	ArrayList<SymbolActor> symbolActorListTop = new ArrayList<SymbolActor>();
+	ArrayList<SymbolActor> symbolActorListBottom = new ArrayList<SymbolActor>();
+	Random r = new Random();
 	@Override
 	public void create() {
+		shapeRenderer = new ShapeRenderer();
+		batch = new SpriteBatch();
 		stage = new Stage(new ExtendViewport(800, 450));
-		Gdx.input.setInputProcessor(stage);
+		gameStage = new Stage(new ExtendViewport(720, 1080));
+		addNewSymbolActors();
+		addNewSymbolActors();
+		addNewSymbolActors();
+		giveSymbolActorsRandomSymbolId();
+		Gdx.input.setInputProcessor(gameStage);
 
-		prepareSkin();
+//******************GPGS setup**********************************************************************
+		{
+			//comment out this line so that the mrstahlfelge  menu does nothing
+			//Gdx.input.setInputProcessor(stage);
+			prepareSkin();
+			if (gsClient == null)
+				gsClient = new MockGameServiceClient(1) {
+					@Override
+					protected Array<ILeaderBoardEntry> getLeaderboardEntries() {
+						return null;
+					}
 
-		/*if (gsClient == null)
-			gsClient = new MockGameServiceClient(1) {
-				@Override
-				protected Array<ILeaderBoardEntry> getLeaderboardEntries() {
-					return null;
-				}
+					@Override
+					protected Array<String> getGameStates() {
+						return null;
+					}
 
-				@Override
-				protected Array<String> getGameStates() {
-					return null;
-				}
+					@Override
+					protected byte[] getGameState() {
+						return new byte[0];
+					}
 
-				@Override
-				protected byte[] getGameState() {
-					return new byte[0];
-				}
+					@Override
+					protected Array<IAchievement> getAchievements() {
+						return null;
+					}
 
-				@Override
-				protected Array<IAchievement> getAchievements() {
-					return null;
-				}
-
-				@Override
-				protected String getPlayerName() {
-					return null;
-				}
-			};*/
-
-		gsClient.setListener(this);
-
-		prepareUI();
-
-		gsClient.resumeSession();
-
-		// needed in case the connection is pending
-		refreshStatusLabel();
+					@Override
+					protected String getPlayerName() {
+						return null;
+					}
+				};
+			gsClient.setListener(this);
+			prepareUI();
+			gsClient.resumeSession();
+			// needed in case the connection is pending
+			refreshStatusLabel();
+		}
 	}
-	private void prepareUI() {
+	private void addNewSymbolActors()
+	{
+		symbolActorListTop.add(new SymbolActor(true,symbolActorListTop.size()));
+		symbolActorListBottom.add(new SymbolActor(false,symbolActorListBottom.size()));
+	}
+	private void giveSymbolActorsRandomSymbolId()
+	{
+		//generate a list of random unique numbers from 0 to (number of symbols - 1)
+		//so if there are 2 symbols in the top and 2 in the bottom we will get the numbers
+		//0 to 3 in a random order
+		ArrayList<Integer> tempArrayList = getUniqueRandomNumberArrayList(symbolActorListBottom.size()+symbolActorListTop.size());
+		//assign the first half of the random numbers to the symbolActors in the symbolActorListTop
+		for(int i = 0; i < symbolActorListTop.size();i++) {
+			symbolActorListTop.get(i).setSymbolId(tempArrayList.get(i));
+		}
+		//assign the second half to the symbolActorListBottom
+		for(int i = symbolActorListTop.size(); i < symbolActorListBottom.size()+symbolActorListTop.size();i++) {
+			symbolActorListBottom.get(i-symbolActorListTop.size()).setSymbolId(tempArrayList.get(i));
+		}
+		//now all the symbols will have a unique random symbolId, but we want 2 of them to match
+		//choose a random symbolActor in the symbolActorListTop ArrayList and set its symbolId
+		//to match that of a random symbolActor in the symbolActorListBottom
+		symbolActorListTop.get(r.nextInt(symbolActorListTop.size())).setSymbolId(symbolActorListBottom.get(r.nextInt(symbolActorListBottom.size())).getSymbolId());
+	}
+
+	/**
+	 * This will return an array of random numbers from 0 to (size-1), no number will be repeated
+	 * @param size determines the size of the array to be returned, also determines the maximum
+	 *             value to be returned which will be (size-1)
+	 */
+	private ArrayList<Integer> getUniqueRandomNumberArrayList(int size)
+	{
+
+		ArrayList<Integer> orderedNumbers = new ArrayList<Integer>();
+		ArrayList<Integer> randomNumbers = new ArrayList<Integer>();
+		//create a list of numbers from 0 to (size-1)
+		for(int i = 0; i < size;i++)
+		{
+			orderedNumbers.add(i);
+		}
+		//remove each number from the orderedNumbers ArrayList at random and add them to the
+		//randomNumbers ArrayList
+		for(int i = 0; i < size;i++)
+		{
+			randomNumbers.add(orderedNumbers.remove(r.nextInt(orderedNumbers.size())));
+		}
+		return randomNumbers;
+	}
+ 	private void prepareUI() {
 		gsStatus = new Label("", skin);
 		gsUsername = new Label("", skin);
 		scoreFillin = new TextField("100", skin);
@@ -473,24 +538,34 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 
 	}
 	@Override
-	public void render()
-	{
-		Gdx.gl.glClearColor(0.2f,0.2f,0.2f,0);
-		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-		stage.act(Math.min(Gdx.graphics.getDeltaTime(),1/30f));
-		stage.draw();
-	}
+	public void render() {
+		//comment this out so that we dont see the gpgs menu
 
+//		Gdx.gl.glClearColor(0.2f, 0.2f, 0.2f, 0);
+//		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+//		stage.act(Math.min(Gdx.graphics.getDeltaTime(),1/30f));
+//		stage.draw();
+		Gdx.gl.glClearColor(0.99f, 0.99f, 0.8f, 0);
+		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+		shapeRenderer.setColor(new Color(0.99f,0.8f,0.8f,0f));
+		shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+		shapeRenderer.circle(50, 50, 32);
+		shapeRenderer.end();
+		gameStage.act(Math.min(Gdx.graphics.getDeltaTime(),1/30f));
+		gameStage.draw();
+	}
 	@Override
 	public void resize(int width, int height)
 	{
-		stage.getViewport().update(width,height,true);
+		//stage.getViewport().update(width,height,true);
+		gameStage.getViewport().update(width,height,true);
 	}
-
 	@Override
 	public void dispose()
 	{
 		stage.dispose();
+		gameStage.dispose();
 		skin.dispose();
 		atlas.dispose();
 
@@ -500,15 +575,11 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 		super.pause();
 		gsClient.pauseSession();
 	}
-
 	@Override
 	public void resume(){
 		super.resume();
 		gsClient.resumeSession();
 	}
-	
-
-
 	@Override
 	public void gsOnSessionActive() {
 		Gdx.app.postRunnable(new Runnable() {
@@ -518,7 +589,6 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 			}
 		});
 	}
-
 	@Override
 	public void gsOnSessionInactive() {
 		Gdx.app.postRunnable(new Runnable() {
@@ -528,7 +598,6 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 			}
 		});
 	}
-
 	@Override
 	public void gsShowErrorToUser(GsErrorType et, String msg, Throwable t) {
 		Dialog dialog = new MyDialog("Error");
@@ -536,7 +605,6 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 		dialog.show(stage);
 
 	}
-
 	public class MyDialog extends Dialog{
 		public MyDialog(String title){
 			super(title,skin);
