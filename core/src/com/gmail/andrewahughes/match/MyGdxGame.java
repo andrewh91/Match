@@ -4,9 +4,11 @@ import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
@@ -24,6 +26,7 @@ import com.badlogic.gdx.utils.viewport.ExtendViewport;
 
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.Vector;
 
 import de.golfgl.gdxgamesvcs.GameServiceException;
 import de.golfgl.gdxgamesvcs.IGameServiceClient;
@@ -43,39 +46,58 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 	public static final String EVENT1 = "EVENT1";
 	public static final String REPOLINK = "https://github.com/MrStahlfelge/gdx-gamesvcs";
 	public static final String FILE_ID = "cloud";
+	public static final int HEIGHT = 1080/2;//my laptop is too small to display 1080, so half the display size
+	public static final int WIDTH = 720/2;
+	public static final float UH = (float)(HEIGHT/100f);//1 percent of screen height
+	public static final float UW = (float)(WIDTH/100f);//1 percent of screen width
+	public static final float SYMBOLRADIUS = 5f*UW;//1 percent of screen width
 
 	public IGameServiceClient gsClient;
 	Skin skin;
 	Stage stage;
-	Stage gameStage;
+	static Stage gameStage;
 	ShapeRenderer shapeRenderer;
 	SpriteBatch batch;
+	BitmapFont font;
 	Label gsStatus;
 	Label gsUsername;
 	private TextButton signInButton;
 	private TextureAtlas atlas;
 	private TextField scoreFillin;
 	private TextField cloudData;
-	ArrayList<SymbolActor> symbolActorListTop = new ArrayList<SymbolActor>();
-	ArrayList<SymbolActor> symbolActorListBottom = new ArrayList<SymbolActor>();
-	Random r = new Random();
+	//these are static so that the symbolActor can call testMatch without needing a reference to
+	//MyGdxGame
+	static ArrayList<SymbolActor> symbolActorListTop = new ArrayList<SymbolActor>();
+	static ArrayList<SymbolActor> symbolActorListBottom = new ArrayList<SymbolActor>();
+	static Random r = new Random();
+	/**
+	 * this variable will store the correct match symbolId, it will be set in
+	 * giveSymbolActorsRandomSymbolId
+	 */
+	private static int matchSymbolId;
+
 	@Override
 	public void create() {
 		shapeRenderer = new ShapeRenderer();
 		batch = new SpriteBatch();
+		font = new BitmapFont();
 		stage = new Stage(new ExtendViewport(800, 450));
-		gameStage = new Stage(new ExtendViewport(720, 1080));
+		gameStage = new Stage(new ExtendViewport(WIDTH, HEIGHT));
 		addNewSymbolActors();
 		addNewSymbolActors();
 		addNewSymbolActors();
 		giveSymbolActorsRandomSymbolId();
 		Gdx.input.setInputProcessor(gameStage);
+		Gdx.app.log("MYLOG","test");
+		gameStage.setDebugAll(true);
+
 
 //******************GPGS setup**********************************************************************
 		{
 			//comment out this line so that the mrstahlfelge  menu does nothing
 			//Gdx.input.setInputProcessor(stage);
 			prepareSkin();
+			//need this if (gsClient == null) code so that they game works in desktop mode
 			if (gsClient == null)
 				gsClient = new MockGameServiceClient(1) {
 					@Override
@@ -110,12 +132,25 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 			refreshStatusLabel();
 		}
 	}
-	private void addNewSymbolActors()
+
+	/**
+	 * adds a new symbolActor in the top and one in the bottom hald
+	 */
+	private static void addNewSymbolActors()
 	{
 		symbolActorListTop.add(new SymbolActor(true,symbolActorListTop.size()));
+		gameStage.addActor(symbolActorListTop.get(symbolActorListTop.size()-1));
 		symbolActorListBottom.add(new SymbolActor(false,symbolActorListBottom.size()));
+		gameStage.addActor(symbolActorListBottom.get(symbolActorListBottom.size()-1));
 	}
-	private void giveSymbolActorsRandomSymbolId()
+
+	/**
+	 * make list of ints from 0 to (number of symbols -1)
+	 * assign these at random to all the symbolsActor, in both halves of the screen
+	 * now copy an int from a random symbolActor in the bottom half and duplicate it in a random
+	 * symbolActor in the top half
+	 */
+	private static void giveSymbolActorsRandomSymbolId()
 	{
 		//generate a list of random unique numbers from 0 to (number of symbols - 1)
 		//so if there are 2 symbols in the top and 2 in the bottom we will get the numbers
@@ -132,7 +167,40 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 		//now all the symbols will have a unique random symbolId, but we want 2 of them to match
 		//choose a random symbolActor in the symbolActorListTop ArrayList and set its symbolId
 		//to match that of a random symbolActor in the symbolActorListBottom
-		symbolActorListTop.get(r.nextInt(symbolActorListTop.size())).setSymbolId(symbolActorListBottom.get(r.nextInt(symbolActorListBottom.size())).getSymbolId());
+		matchSymbolId=symbolActorListBottom.get(r.nextInt(symbolActorListBottom.size())).getSymbolId();
+		symbolActorListTop.get(r.nextInt(symbolActorListTop.size())).setSymbolId(matchSymbolId);
+	}
+
+	/**
+	 * this method will be called from the click listener of the symbolActor, the symbolId of that
+	 * actor will be compared with the correct matchSymbolId to see if the match is correct
+	 * @param symbolId the symbolId of the clicked symbolActor
+	 * @return
+	 */
+	public static Boolean testMatch(int symbolId)
+	{
+		if(symbolId==matchSymbolId)
+		{
+			Gdx.app.log("MYLOG","Match found!");
+			matchFound();
+			return true;
+		}
+		else
+		{
+			Gdx.app.log("MYLOG","Match failed!");
+			matchFailed();
+			return false;
+		}
+	}
+
+	private static void matchFound()
+	{
+		addNewSymbolActors();
+		giveSymbolActorsRandomSymbolId();
+	}
+
+	private static void matchFailed()
+	{
 	}
 
 	/**
@@ -140,7 +208,7 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 	 * @param size determines the size of the array to be returned, also determines the maximum
 	 *             value to be returned which will be (size-1)
 	 */
-	private ArrayList<Integer> getUniqueRandomNumberArrayList(int size)
+	private static ArrayList<Integer> getUniqueRandomNumberArrayList(int size)
 	{
 
 		ArrayList<Integer> orderedNumbers = new ArrayList<Integer>();
@@ -550,10 +618,50 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 		shapeRenderer.setColor(new Color(0.99f,0.8f,0.8f,0f));
 		shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-		shapeRenderer.circle(50, 50, 32);
+		shapeRenderer.rect(0,HEIGHT/2-(2*UH)/2,WIDTH,2*UH);//draw the mid line across the screen
+		drawSymbolActorsShape(symbolActorListBottom);
+		drawSymbolActorsShape(symbolActorListTop);
 		shapeRenderer.end();
+		batch.begin();
+		drawSymbolActorsFont(symbolActorListBottom);
+		drawSymbolActorsFont(symbolActorListTop);
+		batch.end();
 		gameStage.act(Math.min(Gdx.graphics.getDeltaTime(),1/30f));
 		gameStage.draw();
+	}
+
+	/**
+	 * derives a Vector2 position from the symbolActor's positionId and topArea bool
+	 * @param sa the SymbolActor that you want the position of
+	 * @return Vector2
+	 */
+	public static Vector2 getSymbolActorPos(SymbolActor sa)
+	{
+		return new Vector2(sa.getPositionId()*10*UH+10*UH, (sa.isTopArea()?50*UH:0)+10*UH);
+	}
+
+	/**
+	 * draw a circle in the position of the SymbolActor
+	 * @param symbolActorList will need to pass in symbolActorListBottom and then symbolActorListTop
+	 */
+	public void drawSymbolActorsShape(ArrayList<SymbolActor> symbolActorList)
+	{
+		for (int dsash = 0; dsash<symbolActorList.size();dsash++)
+		{
+			shapeRenderer.circle(symbolActorList.get(dsash).getPos().x, symbolActorList.get(dsash).getPos().y, 3*UW);
+
+		}
+	}
+	/**
+	 * draw text in the position of the SymbolActor, this method will be replaced by an actual symbol bitmap eventually
+	 * @param symbolActorList will need to pass in symbolActorListBottom and then symbolActorListTop
+	 */
+	public void drawSymbolActorsFont(ArrayList<SymbolActor> symbolActorList)
+	{
+		for (int dsaf = 0; dsaf<symbolActorList.size();dsaf++)
+		{
+			font.draw(batch, ""+symbolActorList.get(dsaf).getSymbolId(), symbolActorList.get(dsaf).getPos().x, symbolActorList.get(dsaf).getPos().y);
+		}
 	}
 	@Override
 	public void resize(int width, int height)
