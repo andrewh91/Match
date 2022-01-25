@@ -49,9 +49,9 @@ public class SymbolActor extends Actor {
     {
         topArea =inTopArea;
         this.positionId=positionId;
-        pos = MyGdxGame.getSymbolActorPos(this);
+        pos = MyGdxGame.setSymbolActorPos(this);
         Gdx.app.log("MYLOG","SymbolActor posX,posY;" +pos.x+","+pos.y);
-        radius = MyGdxGame.SYMBOLRADIUS;
+        radius = MyGdxGame.RECOMMENDEDSYMBOLRADIUS;
         this.setBounds(pos.x-radius,pos.y-radius,radius*2,radius*2);
         this.addListener(new ClickListener(){
             @Override
