@@ -13,18 +13,19 @@ import static com.gmail.andrewahughes.match.MyGdxGame.RECOMMENDEDSYMBOLRADIUS;
 /**
  * This is a helper class, created this in a separte class to neaten up the code
  * This helper will create a list of Vector2 values that will help to space out the
- * symbolActors. just need to initialise this class with number of hexes as the argument
+ * symbolActors. just need to initialise this class with number of symbols as the argument
  */
 public class SpiralHelper {
-    static ArrayList<Vector2> spiralHexList;
-    SpiralHelper(int numberOfHexes)
+    static ArrayList<Vector2> spiralSymbolList;
+    SpiralHelper(int numberOfSymbols)
     {
-        spiralHexList = new ArrayList<Vector2>();
-        getHexSpiralPositions(numberOfHexes);
+        spiralSymbolList = new ArrayList<Vector2>();
+        getSymbolSpiralPositions(numberOfSymbols);
     }
 
     /**
-     * return a list of centre points for hexes arranged in a spiral pattern. first hex will be in
+     * symbols will be hex shaped
+     * return a list of centre points for symbols arranged in a spiral pattern. first  will be in
      * the centre, then the rule is we go to the right of the top right most hex and spiral around
      * clockwise until we complete a layer. this is designed to use the horizontal space more than
      * the vertical space due to our screen layout, so it will also add some extra hexes to the left
@@ -32,23 +33,23 @@ public class SpiralHelper {
      * @param numberOfHexes
      * @return the returned result should be multiplied by the SYMBOLRADIUS before use
      */
-    public ArrayList<Vector2> getHexSpiralPositions(int numberOfHexes)
+    public ArrayList<Vector2> getSymbolSpiralPositions(int numberOfHexes)
     {
-        spiralHexList.add(new Vector2(0f, 0f));
+        spiralSymbolList.add(new Vector2(0f, 0f));
         int numberOfLayers=1;
         // the number of hexes in each layer increases exponentially, this will figure out how many
         // layers there will be
         int hexInLayers=1;
         for(int layers=1;layers<10;layers++)
         {
-            hexInLayers=hexInLayers+6*layers;
-            if(numberOfHexes>=hexInLayers)
+            hexInLayers=hexInLayers+6*(layers-1);
+            if(numberOfHexes>hexInLayers)
             {
                 spiralLayer(layers);
+                numberOfLayers=layers;
             }
             else
             {
-                numberOfLayers=layers;
                 break;
             }
         }
@@ -61,7 +62,7 @@ public class SpiralHelper {
             RECOMMENDEDSYMBOLRADIUS=AREAWIDTH/spiralWidth;
         }
         Gdx.app.log("MYLOG","RECOMMENDEDSYMBOLRADIUS "+RECOMMENDEDSYMBOLRADIUS);
-        return spiralHexList;
+        return spiralSymbolList;
     }
     /**
      * helper function to create the spiralHexList
@@ -101,42 +102,42 @@ public class SpiralHelper {
      */
     private void sr()
     {
-        spiralHexList.add(new Vector2(spiralHexList.get(spiralHexList.size()-1).x+C30*2,spiralHexList.get(spiralHexList.size()-1).y));
+        spiralSymbolList.add(new Vector2(spiralSymbolList.get(spiralSymbolList.size()-1).x+C30*2, spiralSymbolList.get(spiralSymbolList.size()-1).y));
     }
     /**
      * helper function for the spiralHexList
      */
     private void sdl()
     {
-        spiralHexList.add(new Vector2(spiralHexList.get(spiralHexList.size()-1).x-C30,spiralHexList.get(spiralHexList.size()-1).y-1.5f));
+        spiralSymbolList.add(new Vector2(spiralSymbolList.get(spiralSymbolList.size()-1).x-C30, spiralSymbolList.get(spiralSymbolList.size()-1).y-1.5f));
     }
     /**
      * helper function for the spiralHexList
      */
     private void sl()
     {
-        spiralHexList.add(new Vector2(spiralHexList.get(spiralHexList.size()-1).x-C30*2,spiralHexList.get(spiralHexList.size()-1).y));
+        spiralSymbolList.add(new Vector2(spiralSymbolList.get(spiralSymbolList.size()-1).x-C30*2, spiralSymbolList.get(spiralSymbolList.size()-1).y));
     }
     /**
      * helper function for the spiralHexList
      */
     private void sul()
     {
-        spiralHexList.add(new Vector2(spiralHexList.get(spiralHexList.size()-1).x-C30,spiralHexList.get(spiralHexList.size()-1).y+1.5f));
+        spiralSymbolList.add(new Vector2(spiralSymbolList.get(spiralSymbolList.size()-1).x-C30, spiralSymbolList.get(spiralSymbolList.size()-1).y+1.5f));
     }
     /**
      * helper function for the spiralHexList
      */
     private void sur()
     {
-        spiralHexList.add(new Vector2(spiralHexList.get(spiralHexList.size()-1).x+C30,spiralHexList.get(spiralHexList.size()-1).y+1.5f));
+        spiralSymbolList.add(new Vector2(spiralSymbolList.get(spiralSymbolList.size()-1).x+C30, spiralSymbolList.get(spiralSymbolList.size()-1).y+1.5f));
     }
     /**
      * helper function for the spiralHexList
      */
     private void sdr()
     {
-        spiralHexList.add(new Vector2(spiralHexList.get(spiralHexList.size()-1).x+C30,spiralHexList.get(spiralHexList.size()-1).y-1.5f));
+        spiralSymbolList.add(new Vector2(spiralSymbolList.get(spiralSymbolList.size()-1).x+C30, spiralSymbolList.get(spiralSymbolList.size()-1).y-1.5f));
     }
 
 }

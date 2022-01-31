@@ -39,7 +39,7 @@ import de.golfgl.gdxgamesvcs.gamestate.ISaveGameStateResponseListener;
 import de.golfgl.gdxgamesvcs.leaderboard.IFetchLeaderBoardEntriesResponseListener;
 import de.golfgl.gdxgamesvcs.leaderboard.ILeaderBoardEntry;
 
-import static com.gmail.andrewahughes.match.SpiralHelper.spiralHexList;
+import static com.gmail.andrewahughes.match.SpiralHelper.spiralSymbolList;
 
 public class MyGdxGame extends ApplicationAdapter implements IGameServiceListener{
 	public static final String LEADERBOARD1 = "BOARD1";
@@ -51,13 +51,16 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 	public static final int WIDTH = 720/2;
 	public static final float UH = (float)(HEIGHT/100f);//1 percent of screen height
 	public static final float UW = (float)(WIDTH/100f);//1 percent of screen width
-	public static final float SYMBOLRADIUS = 5f*UW;//1 percent of screen width
+	public static final float SYMBOLRADIUS = 5f*UW;
 	public static float RECOMMENDEDSYMBOLRADIUS = SYMBOLRADIUS;//1 percent of screen width
-	public static final float AREAHEIGHT = HEIGHT/2;
+	public static final float AREAHEIGHT = HEIGHT/2-UH*2;
 	public static final float AREAWIDTH = WIDTH;
 	public static final float AREAMARGINX = (WIDTH-AREAWIDTH)/2;
 	public static final float AREAMARGINY = (HEIGHT/2-AREAHEIGHT)/2;
 	public static final float C30 = (float) Math.cos(Math.PI/6);
+	private static int score=0;
+	private static float timer=60;
+	private static boolean timerPlaying=false;
 
 	public IGameServiceClient gsClient;
 	Skin skin;
@@ -86,19 +89,27 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 	 * i will use this to help create a grid of positions to assign to the symbolActors
 	 */
 	static SpiralHelper spiralHelper;
-	private static final int MAXNUMBEROFHEXES=61;
+	/**
+	 * this will determine how many symbols will fit in each half of the screen, it will in turn
+	 * determine the radius of the symbols, if there are more symbols they will have to be smaller
+	 * to use all the screen space, the options should be 1, 7, 19, 37, 61 etc (1+(n-1)*6)
+	 */
+	private static final int MAXNUMBEROFSYMBOLS =1;
 	@Override
 	public void create() {
+
+		Gdx.app.log("MYLOG","C30 = "+C30);
 		shapeRenderer = new ShapeRenderer();
 		batch = new SpriteBatch();
 		font = new BitmapFont();
 		stage = new Stage(new ExtendViewport(800, 450));
 		gameStage = new Stage(new ExtendViewport(WIDTH, HEIGHT));
-		spiralHelper = new SpiralHelper(MAXNUMBEROFHEXES);
-		addNewSymbolActors();
+		spiralHelper = new SpiralHelper(MAXNUMBEROFSYMBOLS);
 		Gdx.input.setInputProcessor(gameStage);
 		Gdx.app.log("MYLOG","test");
-		gameStage.setDebugAll(true);
+		addNewSymbolActors();
+		//bounding boxes for actors
+		//gameStage.setDebugAll(true);
 
 
 //******************GPGS setup**********************************************************************
@@ -147,7 +158,7 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 	 */
 	private static void addNewSymbolActors()
 	{
-		if(symbolActorListTop.size()<MAXNUMBEROFHEXES) {
+		if(symbolActorListTop.size()< MAXNUMBEROFSYMBOLS) {
 			symbolActorListTop.add(new SymbolActor(true, symbolActorListTop.size()));
 			gameStage.addActor(symbolActorListTop.get(symbolActorListTop.size() - 1));
 			symbolActorListBottom.add(new SymbolActor(false, symbolActorListBottom.size()));
@@ -203,12 +214,47 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 	private static void matchFound()
 	{
 		Gdx.app.log("MYLOG","Match found!");
+		timerPlaying=true;
 		addNewSymbolActors();
+
+		score++;
 	}
 
 	private static void matchFailed()
 	{
 		Gdx.app.log("MYLOG","Match failed!");
+		score--;
+	}
+
+	private void gameOver()
+	{
+		Gdx.app.log("MYLOG","gameover, score:"+score);
+		int newScore=score;
+		gsClient.submitToLeaderboard(LEADERBOARD1, newScore, gsClient.getGameServiceId());
+		try {
+			Gdx.app.log("MYLOG","start showing leaderboard, arg="+LEADERBOARD1);
+			gsClient.showLeaderboards(LEADERBOARD1);
+		} catch (GameServiceException e) {
+			e.printStackTrace();
+		}
+		resetGame();
+	}
+	private static void resetGame()
+	{
+		for(int sa=0;sa<symbolActorListTop.size();sa++)
+		{
+			symbolActorListTop.get(sa).addAction(Actions.removeActor());
+		}
+		for(int sa=0;sa<symbolActorListBottom.size();sa++)
+		{
+			symbolActorListBottom.get(sa).addAction(Actions.removeActor());
+		}
+		symbolActorListTop=new ArrayList<SymbolActor>();
+		symbolActorListBottom=new ArrayList<SymbolActor>();
+		addNewSymbolActors();
+		score=0;
+		timerPlaying=false;
+		timer=60;
 	}
 
 	/**
@@ -628,13 +674,25 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 		shapeRenderer.rect(0,HEIGHT/2-(2*UH)/2,WIDTH,2*UH);//draw the mid line across the screen
 		drawSymbolActorsShape(symbolActorListBottom);
 		drawSymbolActorsShape(symbolActorListTop);
+		symbolActorListTop.get(0).draw(shapeRenderer);
 		shapeRenderer.end();
 
 		gameStage.act(Math.min(Gdx.graphics.getDeltaTime(),1/30f));
 		gameStage.draw();
+		if(timerPlaying)
+		{
+			timer=timer-Gdx.graphics.getDeltaTime();
+		}
+		if(timer<=0)
+		{
+			timerPlaying=false;
+			gameOver();
+		}
 		batch.begin();
 		drawSymbolActorsFont(symbolActorListBottom);
 		drawSymbolActorsFont(symbolActorListTop);
+		drawScore();
+		drawTimer();
 		batch.end();
 	}
 
@@ -646,7 +704,7 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 	 */
 	public static Vector2 setSymbolActorPos(SymbolActor sa)
 	{
-		return new Vector2(spiralHexList.get(sa.getPositionId()).x*RECOMMENDEDSYMBOLRADIUS+AREAWIDTH/2+AREAMARGINX, spiralHexList.get(sa.getPositionId()).y*RECOMMENDEDSYMBOLRADIUS+(sa.isTopArea()?50*UH:0)+AREAHEIGHT/2+AREAMARGINY);
+		return new Vector2(spiralSymbolList.get(sa.getPositionId()).x*RECOMMENDEDSYMBOLRADIUS+AREAWIDTH/2+AREAMARGINX, spiralSymbolList.get(sa.getPositionId()).y*RECOMMENDEDSYMBOLRADIUS+(sa.isTopArea()?50*UH:0)+AREAHEIGHT/2+AREAMARGINY);
 	}
 	/**
 	 * draw a 'point up' hex, centred on the x and y arg, radius r (max radius)
@@ -654,7 +712,7 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 	 * @param y y pos
 	 * @param r the longest radius
 	 */
-	public void drawHex(float x, float y,float r)
+	public void drawHexOutline(float x, float y,float r)
 	{
 		shapeRenderer.line(	x- C30 *r,	y-r/2,	x,	y-r);			// \
 		shapeRenderer.line(	x,	y-r,x+ C30 *r,y-r/2);				//  /
@@ -662,6 +720,21 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 		shapeRenderer.line(	x+ C30 *r,y+r/2,x,y+r);					//  \
 		shapeRenderer.line(	x,y+r,x- C30 *r,y+r/2);					// /
 		shapeRenderer.line(	x- C30 *r,y+r/2,x- C30 *r,	y-r/2);	// |
+	}
+	/**
+	 * draw a filled 'point up' hex, centred on the x and y arg, radius r (max radius)
+	 * @param x x pos
+	 * @param y y pos
+	 * @param r the longest radius
+	 */
+	public void drawHex(float x, float y,float r)
+	{
+		shapeRenderer.triangle(	x- C30 *r,	y-r/2,	x,	y-r,x,y);			// \
+		shapeRenderer.triangle(	x,	y-r,x+ C30 *r,y-r/2,x,y);				//  /
+		shapeRenderer.triangle(	x+ C30 *r,y-r/2,x+ C30 *r,y+r/2,x,y);	//  |
+		shapeRenderer.triangle(	x+ C30 *r,y+r/2,x,y+r,x,y);					//  \
+		shapeRenderer.triangle(	x,y+r,x- C30 *r,y+r/2,x,y);					// /
+		shapeRenderer.triangle(	x- C30 *r,y+r/2,x- C30 *r,	y-r/2,x,y);	// |
 	}
 
 	/**
@@ -672,7 +745,7 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 	{
 		for (int dsash = 0; dsash<symbolActorList.size();dsash++)
 		{
-			shapeRenderer.circle(symbolActorList.get(dsash).getPos().x, symbolActorList.get(dsash).getPos().y, RECOMMENDEDSYMBOLRADIUS);
+			drawHex(symbolActorList.get(dsash).getPos().x, symbolActorList.get(dsash).getPos().y, RECOMMENDEDSYMBOLRADIUS);
 		}
 	}
 	/**
@@ -685,6 +758,14 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 		{
 			font.draw(batch, ""+symbolActorList.get(dsaf).getSymbolId(), symbolActorList.get(dsaf).getPos().x, symbolActorList.get(dsaf).getPos().y);
 		}
+	}
+	public void drawScore()
+	{
+		font.draw(batch,""+score,5f*UW,HEIGHT/2f);
+	}
+	public void drawTimer()
+	{
+		font.draw(batch,""+Math.floor(timer*100)/100,95f*UW,HEIGHT/2f);
 	}
 	@Override
 	public void resize(int width, int height)
