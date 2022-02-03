@@ -23,6 +23,8 @@ import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
+import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.StretchViewport;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -47,7 +49,11 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 	public static final String EVENT1 = "EVENT1";
 	public static final String REPOLINK = "https://github.com/MrStahlfelge/gdx-gamesvcs";
 	public static final String FILE_ID = "cloud";
-	public static final int HEIGHT = 1080;//my laptop is too small to display 1080, so half the display size
+	//best to use close to a common resolution, the fit viewport and projection matrix will display
+	// this on screen without distorting or cropping the image, for the most part only the ratio is
+	//important, so you could have 16 height and 9 width, but the font will be huge, but if you
+	//got rid of the font everything would look normal
+	public static final int HEIGHT = 1080;
 	public static final int WIDTH = 720;
 	public static final float UH = (float)(HEIGHT/100f);//1 percent of screen height
 	public static final float UW = (float)(WIDTH/100f);//1 percent of screen width
@@ -108,8 +114,11 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 		shapeRenderer = new ShapeRenderer();
 		batch = new SpriteBatch();
 		font = new BitmapFont();
-		stage = new Stage(new ExtendViewport(800, 450));
-		gameStage = new Stage(new ExtendViewport(WIDTH, HEIGHT));
+		stage = new Stage(new FitViewport(WIDTH,HEIGHT));
+		gameStage = new Stage(new FitViewport(WIDTH, HEIGHT));
+		gameStage.getViewport().update(WIDTH,HEIGHT,true);
+		batch.setProjectionMatrix(gameStage.getCamera().combined);
+		shapeRenderer.setProjectionMatrix(gameStage.getCamera().combined);
 		spiralHelper = new SpiralHelper(MAXNUMBEROFSYMBOLS);
 		Gdx.input.setInputProcessor(gameStage);
 		Gdx.app.log("MYLOG","test");
@@ -683,8 +692,10 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 //		stage.draw();
 		Gdx.gl.glClearColor(0.99f, 0.99f, 0.8f, 0);
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-		shapeRenderer.setColor(new Color(0.99f,0.8f,0.8f,0f));
+		shapeRenderer.setColor(new Color(0.0f,0.8f,0.99f,0f));
 		shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+		shapeRenderer.rect(0,0,WIDTH,HEIGHT);//draw a rect the size of the screen
+		shapeRenderer.setColor(new Color(0.99f,0.8f,0.8f,0f));
 		shapeRenderer.rect(0,HEIGHT/2-(2*UH)/2,WIDTH,2*UH);//draw the mid line across the screen
 		drawSymbolActorsShape(symbolActorListBottom);
 		drawSymbolActorsShape(symbolActorListTop);
@@ -789,6 +800,8 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 	{
 		//stage.getViewport().update(width,height,true);
 		gameStage.getViewport().update(width,height,true);
+		batch.setProjectionMatrix(gameStage.getCamera().combined);
+		shapeRenderer.setProjectionMatrix(gameStage.getCamera().combined);
 	}
 	@Override
 	public void dispose()
