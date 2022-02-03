@@ -47,8 +47,8 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 	public static final String EVENT1 = "EVENT1";
 	public static final String REPOLINK = "https://github.com/MrStahlfelge/gdx-gamesvcs";
 	public static final String FILE_ID = "cloud";
-	public static final int HEIGHT = 1080/2;//my laptop is too small to display 1080, so half the display size
-	public static final int WIDTH = 720/2;
+	public static final int HEIGHT = 1080;//my laptop is too small to display 1080, so half the display size
+	public static final int WIDTH = 720;
 	public static final float UH = (float)(HEIGHT/100f);//1 percent of screen height
 	public static final float UW = (float)(WIDTH/100f);//1 percent of screen width
 	public static final float SYMBOLRADIUS = 5f*UW;
@@ -61,6 +61,12 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 	private static int score=0;
 	private static float timer=60;
 	private static boolean timerPlaying=false;
+	private static final float DISABLETOUCHTIMERMAX=1f;
+	/**
+	 * disable touch briefly when the game ends so you don't accidentally touch something
+	 * this will be set to a brief time and count down to 0, during which time u can't touch
+	 */
+	private static float disableTouchTimer=DISABLETOUCHTIMERMAX;
 
 	public IGameServiceClient gsClient;
 	Skin skin;
@@ -94,7 +100,7 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 	 * determine the radius of the symbols, if there are more symbols they will have to be smaller
 	 * to use all the screen space, the options should be 1, 7, 19, 37, 61 etc (1+(n-1)*6)
 	 */
-	private static final int MAXNUMBEROFSYMBOLS =1;
+	private static final int MAXNUMBEROFSYMBOLS =7;
 	@Override
 	public void create() {
 
@@ -213,21 +219,25 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 
 	private static void matchFound()
 	{
-		Gdx.app.log("MYLOG","Match found!");
-		timerPlaying=true;
-		addNewSymbolActors();
-
-		score++;
+		if(disableTouchTimer<=0) {
+			Gdx.app.log("MYLOG", "Match found!");
+			timerPlaying = true;
+			addNewSymbolActors();
+			score++;
+		}
 	}
 
 	private static void matchFailed()
 	{
-		Gdx.app.log("MYLOG","Match failed!");
-		score--;
+		if(disableTouchTimer<=0) {
+			Gdx.app.log("MYLOG", "Match failed!");
+			score--;
+		}
 	}
 
 	private void gameOver()
 	{
+		disableTouch();
 		Gdx.app.log("MYLOG","gameover, score:"+score);
 		int newScore=score;
 		gsClient.submitToLeaderboard(LEADERBOARD1, newScore, gsClient.getGameServiceId());
@@ -238,6 +248,10 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 			e.printStackTrace();
 		}
 		resetGame();
+	}
+	private static void disableTouch()
+	{
+		disableTouchTimer=DISABLETOUCHTIMERMAX;
 	}
 	private static void resetGame()
 	{
@@ -674,7 +688,6 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 		shapeRenderer.rect(0,HEIGHT/2-(2*UH)/2,WIDTH,2*UH);//draw the mid line across the screen
 		drawSymbolActorsShape(symbolActorListBottom);
 		drawSymbolActorsShape(symbolActorListTop);
-		symbolActorListTop.get(0).draw(shapeRenderer);
 		shapeRenderer.end();
 
 		gameStage.act(Math.min(Gdx.graphics.getDeltaTime(),1/30f));
@@ -687,6 +700,10 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 		{
 			timerPlaying=false;
 			gameOver();
+		}
+		if(disableTouchTimer>0)
+		{
+			disableTouchTimer=disableTouchTimer-Gdx.graphics.getDeltaTime();
 		}
 		batch.begin();
 		drawSymbolActorsFont(symbolActorListBottom);
@@ -761,11 +778,11 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 	}
 	public void drawScore()
 	{
-		font.draw(batch,""+score,5f*UW,HEIGHT/2f);
+		font.draw(batch,""+score,10f*UW,HEIGHT/2f);
 	}
 	public void drawTimer()
 	{
-		font.draw(batch,""+Math.floor(timer*100)/100,95f*UW,HEIGHT/2f);
+		font.draw(batch,""+Math.floor(timer*100)/100,90f*UW,HEIGHT/2f);
 	}
 	@Override
 	public void resize(int width, int height)

@@ -80,7 +80,8 @@ public class SymbolActor extends Actor {
     }
     public void draw(ShapeRenderer shapeRenderer)
     {
-        float ax=0;
+        //i only drew this to help set up collision detection
+       /* float ax=0;
         float ax2=100;
         float ay = -ax*C30*2/3+radius/2		;
         float ay2 = -ax2*C30*2/3+radius/2	;
@@ -95,7 +96,7 @@ public class SymbolActor extends Actor {
         shapeRenderer.line(ax+this.pos.x-innerRadius,ay+this.pos.y-radius,ax2+this.pos.x-innerRadius,ay2+this.pos.y-radius);
         shapeRenderer.line(ax+this.pos.x-innerRadius,by+this.pos.y-radius,ax2+this.pos.x-innerRadius,by2+this.pos.y-radius);
         shapeRenderer.line(ax+this.pos.x-innerRadius,cy+this.pos.y-radius,ax2+this.pos.x-innerRadius,cy2+this.pos.y-radius);
-        shapeRenderer.line(ax+this.pos.x-innerRadius,dy+this.pos.y-radius,ax2+this.pos.x-innerRadius,dy2+this.pos.y-radius);
+        shapeRenderer.line(ax+this.pos.x-innerRadius,dy+this.pos.y-radius,ax2+this.pos.x-innerRadius,dy2+this.pos.y-radius);*/
     }
     /**
      * the click listener only tells us if a touch is in the bounding box rectangle, but our symbols
