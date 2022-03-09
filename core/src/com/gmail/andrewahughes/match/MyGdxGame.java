@@ -4,6 +4,7 @@ import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
@@ -58,7 +59,7 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 	public static final float UH = (float)(HEIGHT/100f);//1 percent of screen height
 	public static final float UW = (float)(WIDTH/100f);//1 percent of screen width
 	public static final float SYMBOLRADIUS = 5f*UW;
-	public static float RECOMMENDEDSYMBOLRADIUS = SYMBOLRADIUS;//1 percent of screen width
+	public static float RECOMMENDEDSYMBOLRADIUS = SYMBOLRADIUS;
 	public static final float AREAHEIGHT = HEIGHT/2-UH*2;
 	public static final float AREAWIDTH = WIDTH;
 	public static final float AREAMARGINX = (WIDTH-AREAWIDTH)/2;
@@ -80,6 +81,7 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 	static Stage gameStage;
 	ShapeRenderer shapeRenderer;
 	SpriteBatch batch;
+	ArrayList<Texture> sym = new ArrayList<Texture>();
 	BitmapFont font;
 	Label gsStatus;
 	Label gsUsername;
@@ -123,6 +125,14 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 		Gdx.input.setInputProcessor(gameStage);
 		Gdx.app.log("MYLOG","test");
 		addNewSymbolActors();
+		for(int si=1;si<10;si++)
+		{
+			sym.add(new Texture("0"+si+".gif"));
+		}
+		for(int si=10;si<14;si++)
+		{
+			sym.add(new Texture(""+si+".gif"));
+		}
 		//bounding boxes for actors
 		//gameStage.setDebugAll(true);
 
@@ -202,11 +212,48 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 		for(int i = symbolActorListTop.size(); i < symbolActorListBottom.size()+symbolActorListTop.size();i++) {
 			symbolActorListBottom.get(i-symbolActorListTop.size()).setSymbolId(tempArrayList.get(i));
 		}
-		//now all the symbols will have a unique random symbolId, but we want 2 of them to match
-		//choose a random symbolActor in the symbolActorListTop ArrayList and set its symbolId
-		//to match that of a random symbolActor in the symbolActorListBottom
-		matchSymbolId=symbolActorListBottom.get(r.nextInt(symbolActorListBottom.size())).getSymbolId();
-		symbolActorListTop.get(r.nextInt(symbolActorListTop.size())).setSymbolId(matchSymbolId);
+		if(symbolActorListBottom.size()+symbolActorListTop.size()<14)
+		{
+			//now all the symbols will have a unique random symbolId, but we want 2 of them to match
+			//choose a random symbolActor in the symbolActorListTop ArrayList and set its symbolId
+			//to match that of a random symbolActor in the symbolActorListBottom
+			matchSymbolId=symbolActorListBottom.get(r.nextInt(symbolActorListBottom.size())).getSymbolId();
+			symbolActorListTop.get(r.nextInt(symbolActorListTop.size())).setSymbolId(matchSymbolId);
+		}
+		else /*if there are 7 symbolActors then the numbers 0 to 13 will be randomly distributed.
+		if the number 13 is left as a symbolId we will get index out of bounds in the draw method
+		since i have not done art for 14 symbols, so we need to make sure to overwrite the 13 symbol
+		with whatever the duplicate symbolId is*/
+		{
+			boolean thirteenFound=false;
+			/*first locate the 13 */
+			for(int i=0;i<symbolActorListTop.size();i++)
+			{
+				if(symbolActorListTop.get(i).getSymbolId()==13)
+				{
+					/*if the 13 is in this array, copy a value from the other array to replace 13*/
+					matchSymbolId=symbolActorListBottom.get(r.nextInt(symbolActorListBottom.size())).getSymbolId();
+					symbolActorListTop.get(i).setSymbolId(matchSymbolId);
+					thirteenFound=true;
+					break;/*break the loop*/
+				}
+			}
+			if(thirteenFound==false)
+			{
+				/*if the 13 was not in the top array it must be in the bottom, so do the same here*/
+				for(int i=0;i<symbolActorListBottom.size();i++)
+				{
+					if(symbolActorListBottom.get(i).getSymbolId()==13)
+					{
+						/*if the 13 is in this array, copy a value from the other array to replace 13*/
+						matchSymbolId=symbolActorListTop.get(r.nextInt(symbolActorListTop.size())).getSymbolId();
+						symbolActorListBottom.get(i).setSymbolId(matchSymbolId);
+						break;/*break the loop*/
+					}
+				}
+			}
+
+		}
 	}
 
 	/**
@@ -785,6 +832,7 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 		for (int dsaf = 0; dsaf<symbolActorList.size();dsaf++)
 		{
 			font.draw(batch, ""+symbolActorList.get(dsaf).getSymbolId(), symbolActorList.get(dsaf).getPos().x, symbolActorList.get(dsaf).getPos().y);
+			batch.draw(sym.get(symbolActorList.get(dsaf).getSymbolId()),symbolActorList.get(dsaf).getPos().x-RECOMMENDEDSYMBOLRADIUS/2,symbolActorList.get(dsaf).getPos().y-RECOMMENDEDSYMBOLRADIUS/2,RECOMMENDEDSYMBOLRADIUS,RECOMMENDEDSYMBOLRADIUS);
 		}
 	}
 	public void drawScore()
@@ -810,7 +858,12 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 		gameStage.dispose();
 		skin.dispose();
 		atlas.dispose();
-
+		batch.dispose();
+		shapeRenderer.dispose();
+		for(int di=0;di<13;di++)
+		{
+			sym.get(di).dispose();
+		}
 	}
 	@Override
 	public void pause(){
