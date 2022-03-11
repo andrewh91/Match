@@ -47,10 +47,13 @@ import static com.gmail.andrewahughes.match.Cell.cellStep;
 import static com.gmail.andrewahughes.match.Cell.cellTimer;
 import static com.gmail.andrewahughes.match.Cell.drawCells;
 import static com.gmail.andrewahughes.match.Cell.oscDuration;
+import static com.gmail.andrewahughes.match.Cell.setPattern;
+import static com.gmail.andrewahughes.match.Cell.setPatternInc;
 import static com.gmail.andrewahughes.match.Cell.spawnChanceMax;
 import static com.gmail.andrewahughes.match.Cell.spawnChanceMin;
 import static com.gmail.andrewahughes.match.Cell.spawnChanceMod;
 import static com.gmail.andrewahughes.match.Cell.spawnRandomRow;
+import static com.gmail.andrewahughes.match.Cell.tempMaxIntensity;
 import static com.gmail.andrewahughes.match.Cell.updateCells;
 import static com.gmail.andrewahughes.match.Cell.osc;
 import static com.gmail.andrewahughes.match.SpiralHelper.spiralSymbolList;
@@ -294,6 +297,7 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 			Gdx.app.log("MYLOG", "Match found!");
 			timerPlaying = true;
 			addNewSymbolActors();
+			setPatternInc();
 			score++;
 		}
 	}
@@ -301,6 +305,7 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 	private static void matchFailed()
 	{
 		if(disableTouchTimer<=0) {
+			tempMaxIntensity();
 			Gdx.app.log("MYLOG", "Match failed!");
 			score--;
 		}
@@ -791,7 +796,7 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 		drawTimer();
 		batch.end();
 		spawnChanceMod=osc(oscDuration,0,0,Gdx.graphics.getDeltaTime());
-		if(cellRun)
+		if(cellRun&&timerPlaying)
 		{
 			cellTimer++;
 			if(cellTimer>cellStep)
