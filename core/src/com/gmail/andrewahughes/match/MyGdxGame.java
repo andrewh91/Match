@@ -42,6 +42,17 @@ import de.golfgl.gdxgamesvcs.gamestate.ISaveGameStateResponseListener;
 import de.golfgl.gdxgamesvcs.leaderboard.IFetchLeaderBoardEntriesResponseListener;
 import de.golfgl.gdxgamesvcs.leaderboard.ILeaderBoardEntry;
 
+import static com.gmail.andrewahughes.match.Cell.cellRun;
+import static com.gmail.andrewahughes.match.Cell.cellStep;
+import static com.gmail.andrewahughes.match.Cell.cellTimer;
+import static com.gmail.andrewahughes.match.Cell.drawCells;
+import static com.gmail.andrewahughes.match.Cell.oscDuration;
+import static com.gmail.andrewahughes.match.Cell.spawnChanceMax;
+import static com.gmail.andrewahughes.match.Cell.spawnChanceMin;
+import static com.gmail.andrewahughes.match.Cell.spawnChanceMod;
+import static com.gmail.andrewahughes.match.Cell.spawnRandomRow;
+import static com.gmail.andrewahughes.match.Cell.updateCells;
+import static com.gmail.andrewahughes.match.Cell.osc;
 import static com.gmail.andrewahughes.match.SpiralHelper.spiralSymbolList;
 
 public class MyGdxGame extends ApplicationAdapter implements IGameServiceListener{
@@ -109,6 +120,9 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 	 * to use all the screen space, the options should be 1, 7, 19, 37, 61 etc (1+(n-1)*6)
 	 */
 	private static final int MAXNUMBEROFSYMBOLS =7;
+
+
+
 	@Override
 	public void create() {
 
@@ -133,6 +147,7 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 		{
 			sym.add(new Texture(""+si+".gif"));
 		}
+		Cell.initialiseCells();
 		//bounding boxes for actors
 		//gameStage.setDebugAll(true);
 
@@ -739,9 +754,15 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 //		stage.draw();
 		Gdx.gl.glClearColor(0.99f, 0.99f, 0.8f, 0);
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-		shapeRenderer.setColor(new Color(0.0f,0.8f,0.99f,0f));
+		/*this allows transparent shapes*/
+		Gdx.gl.glEnable(GL20.GL_BLEND);Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 		shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-		shapeRenderer.rect(0,0,WIDTH,HEIGHT);//draw a rect the size of the screen
+		drawCells(shapeRenderer);
+		//shapeRenderer.setColor(new Color(0.0f,0.8f,0.99f,0f));
+		//shapeRenderer.rect(0,0,WIDTH,HEIGHT);//draw a rect the size of the screen
+		shapeRenderer.end();
+		Gdx.gl.glDisable(GL20.GL_BLEND);
+		shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 		shapeRenderer.setColor(new Color(0.99f,0.8f,0.8f,0f));
 		shapeRenderer.rect(0,HEIGHT/2-(2*UH)/2,WIDTH,2*UH);//draw the mid line across the screen
 		drawSymbolActorsShape(symbolActorListBottom);
@@ -769,6 +790,17 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 		drawScore();
 		drawTimer();
 		batch.end();
+		spawnChanceMod=osc(oscDuration,0,0,Gdx.graphics.getDeltaTime());
+		if(cellRun)
+		{
+			cellTimer++;
+			if(cellTimer>cellStep)
+			{
+				cellTimer = 0;
+				updateCells();
+				spawnRandomRow(0, spawnChanceMin + (spawnChanceMax - spawnChanceMin) * spawnChanceMod);
+			}
+		}
 	}
 
 	/**
