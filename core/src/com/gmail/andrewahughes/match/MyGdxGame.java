@@ -42,13 +42,16 @@ import de.golfgl.gdxgamesvcs.gamestate.ISaveGameStateResponseListener;
 import de.golfgl.gdxgamesvcs.leaderboard.IFetchLeaderBoardEntriesResponseListener;
 import de.golfgl.gdxgamesvcs.leaderboard.ILeaderBoardEntry;
 
+import static com.gmail.andrewahughes.match.Cell.aliveArray;
 import static com.gmail.andrewahughes.match.Cell.cellRun;
 import static com.gmail.andrewahughes.match.Cell.cellStep;
 import static com.gmail.andrewahughes.match.Cell.cellTimer;
 import static com.gmail.andrewahughes.match.Cell.drawCells;
+import static com.gmail.andrewahughes.match.Cell.initialiseCells;
+import static com.gmail.andrewahughes.match.Cell.neighbourArray;
 import static com.gmail.andrewahughes.match.Cell.oscDuration;
-import static com.gmail.andrewahughes.match.Cell.setPattern;
-import static com.gmail.andrewahughes.match.Cell.setPatternInc;
+import static com.gmail.andrewahughes.match.Cell.reduceBackground;
+import static com.gmail.andrewahughes.match.Cell.remainArray;
 import static com.gmail.andrewahughes.match.Cell.spawnChanceMax;
 import static com.gmail.andrewahughes.match.Cell.spawnChanceMin;
 import static com.gmail.andrewahughes.match.Cell.spawnChanceMod;
@@ -222,55 +225,54 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 		//so if there are 2 symbols in the top and 2 in the bottom we will get the numbers
 		//0 to 3 in a random order
 		ArrayList<Integer> tempArrayList = getUniqueRandomNumberArrayList(symbolActorListBottom.size()+symbolActorListTop.size());
-		//assign the first half of the random numbers to the symbolActors in the symbolActorListTop
-		for(int i = 0; i < symbolActorListTop.size();i++) {
-			symbolActorListTop.get(i).setSymbolId(tempArrayList.get(i));
-		}
-		//assign the second half to the symbolActorListBottom
-		for(int i = symbolActorListTop.size(); i < symbolActorListBottom.size()+symbolActorListTop.size();i++) {
-			symbolActorListBottom.get(i-symbolActorListTop.size()).setSymbolId(tempArrayList.get(i));
-		}
-		if(symbolActorListBottom.size()+symbolActorListTop.size()<14)
+		if(tempArrayList.size()==2)
 		{
-			//now all the symbols will have a unique random symbolId, but we want 2 of them to match
-			//choose a random symbolActor in the symbolActorListTop ArrayList and set its symbolId
-			//to match that of a random symbolActor in the symbolActorListBottom
-			matchSymbolId=symbolActorListBottom.get(r.nextInt(symbolActorListBottom.size())).getSymbolId();
-			symbolActorListTop.get(r.nextInt(symbolActorListTop.size())).setSymbolId(matchSymbolId);
+			symbolActorListTop.get(0).setSymbolId(0);
+			symbolActorListBottom.get(0).setSymbolId(0);
 		}
-		else /*if there are 7 symbolActors then the numbers 0 to 13 will be randomly distributed.
+		else {
+			//assign the first half of the random numbers to the symbolActors in the symbolActorListTop
+			for (int i = 0; i < symbolActorListTop.size(); i++) {
+				symbolActorListTop.get(i).setSymbolId(tempArrayList.get(i));
+			}
+			//assign the second half to the symbolActorListBottom
+			for (int i = symbolActorListTop.size(); i < symbolActorListBottom.size() + symbolActorListTop.size(); i++) {
+				symbolActorListBottom.get(i - symbolActorListTop.size()).setSymbolId(tempArrayList.get(i));
+			}
+			if (symbolActorListBottom.size() + symbolActorListTop.size() < 14) {
+				//now all the symbols will have a unique random symbolId, but we want 2 of them to match
+				//choose a random symbolActor in the symbolActorListTop ArrayList and set its symbolId
+				//to match that of a random symbolActor in the symbolActorListBottom
+				matchSymbolId = symbolActorListBottom.get(r.nextInt(symbolActorListBottom.size())).getSymbolId();
+				symbolActorListTop.get(r.nextInt(symbolActorListTop.size())).setSymbolId(matchSymbolId);
+			} else /*if there are 7 symbolActors then the numbers 0 to 13 will be randomly distributed.
 		if the number 13 is left as a symbolId we will get index out of bounds in the draw method
 		since i have not done art for 14 symbols, so we need to make sure to overwrite the 13 symbol
-		with whatever the duplicate symbolId is*/
-		{
-			boolean thirteenFound=false;
-			/*first locate the 13 */
-			for(int i=0;i<symbolActorListTop.size();i++)
-			{
-				if(symbolActorListTop.get(i).getSymbolId()==13)
-				{
-					/*if the 13 is in this array, copy a value from the other array to replace 13*/
-					matchSymbolId=symbolActorListBottom.get(r.nextInt(symbolActorListBottom.size())).getSymbolId();
-					symbolActorListTop.get(i).setSymbolId(matchSymbolId);
-					thirteenFound=true;
-					break;/*break the loop*/
-				}
-			}
-			if(thirteenFound==false)
-			{
-				/*if the 13 was not in the top array it must be in the bottom, so do the same here*/
-				for(int i=0;i<symbolActorListBottom.size();i++)
-				{
-					if(symbolActorListBottom.get(i).getSymbolId()==13)
-					{
+		with whatever the duplicate symbolId is*/ {
+				boolean thirteenFound = false;
+				/*first locate the 13 */
+				for (int i = 0; i < symbolActorListTop.size(); i++) {
+					if (symbolActorListTop.get(i).getSymbolId() == 13) {
 						/*if the 13 is in this array, copy a value from the other array to replace 13*/
-						matchSymbolId=symbolActorListTop.get(r.nextInt(symbolActorListTop.size())).getSymbolId();
-						symbolActorListBottom.get(i).setSymbolId(matchSymbolId);
+						matchSymbolId = symbolActorListBottom.get(r.nextInt(symbolActorListBottom.size())).getSymbolId();
+						symbolActorListTop.get(i).setSymbolId(matchSymbolId);
+						thirteenFound = true;
 						break;/*break the loop*/
 					}
 				}
-			}
+				if (thirteenFound == false) {
+					/*if the 13 was not in the top array it must be in the bottom, so do the same here*/
+					for (int i = 0; i < symbolActorListBottom.size(); i++) {
+						if (symbolActorListBottom.get(i).getSymbolId() == 13) {
+							/*if the 13 is in this array, copy a value from the other array to replace 13*/
+							matchSymbolId = symbolActorListTop.get(r.nextInt(symbolActorListTop.size())).getSymbolId();
+							symbolActorListBottom.get(i).setSymbolId(matchSymbolId);
+							break;/*break the loop*/
+						}
+					}
+				}
 
+			}
 		}
 	}
 
@@ -297,7 +299,7 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 			Gdx.app.log("MYLOG", "Match found!");
 			timerPlaying = true;
 			addNewSymbolActors();
-			setPatternInc();
+			reduceBackground();
 			score++;
 		}
 	}
@@ -345,6 +347,7 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 		score=0;
 		timerPlaying=false;
 		timer=60;
+		initialiseCells();
 	}
 
 	/**
@@ -794,8 +797,14 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 		drawSymbolActorsFont(symbolActorListTop);
 		drawScore();
 		drawTimer();
+		font.draw(batch,""+neighbourArray,10f*UW,HEIGHT/2f+10*UH);
+		font.draw(batch,""+aliveArray,10f*UW,HEIGHT/2f+20*UH);
+		font.draw(batch,""+remainArray,10f*UW,HEIGHT/2f+30*UH);
+		font.draw(batch,""+spawnChanceMin,10f*UW,HEIGHT/2f+40*UH);
+		font.draw(batch,""+spawnChanceMax,10f*UW,HEIGHT/2f+50*UH);
+		font.draw(batch,""+symbolActorListTop.size(),10f*UW,HEIGHT/2f-10*UH);
 		batch.end();
-		spawnChanceMod=osc(oscDuration,0,0,Gdx.graphics.getDeltaTime());
+		spawnChanceMod=osc(oscDuration,0,0,timer*1000);
 		if(cellRun&&timerPlaying)
 		{
 			cellTimer++;
