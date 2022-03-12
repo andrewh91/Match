@@ -8,6 +8,7 @@ import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 
+import static com.gmail.andrewahughes.match.Cell.influenceWind;
 import static com.gmail.andrewahughes.match.MyGdxGame.C30;
 import static com.gmail.andrewahughes.match.MyGdxGame.RECOMMENDEDSYMBOLRADIUS;
 
@@ -75,6 +76,9 @@ public class SymbolActor extends Actor {
                     Gdx.app.log("MYLOG", "SymbolActor hex clicked: posId;" + positionId + " symId;" + symbolId + " pos;" + pos.x + "," + pos.y);
                     MyGdxGame.testMatch(symbolId);
                 }
+                /*regardless of if the touch is in a hex or not, have the touch influence the wind
+                 for the background*/
+                influenceWind(x+pos.x);
             }
         });
     }

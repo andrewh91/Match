@@ -227,6 +227,7 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 		ArrayList<Integer> tempArrayList = getUniqueRandomNumberArrayList(symbolActorListBottom.size()+symbolActorListTop.size());
 		if(tempArrayList.size()==2)
 		{
+			matchSymbolId=0;
 			symbolActorListTop.get(0).setSymbolId(0);
 			symbolActorListBottom.get(0).setSymbolId(0);
 		}
