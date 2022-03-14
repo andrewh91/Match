@@ -302,6 +302,7 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 			addNewSymbolActors();
 			reduceBackground();
 			score++;
+
 		}
 	}
 
@@ -317,8 +318,12 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 	private void gameOver()
 	{
 		disableTouch();
-		Gdx.app.log("MYLOG","gameover, score:"+score);
-		int newScore=score;
+		Gdx.app.log("MYLOG","gameover, score:"+timer);
+		/*game finishes after score reaches 7 or timer goes from 60 to 9 seconds
+		, time remaining is submitted to leaderboard. if you fail a match score -1,
+		so you will need more matches, will take more time, maximum theoretical score is
+		60,000 which would be impossible*/
+		int newScore=(int)(timer*1000);
 		gsClient.submitToLeaderboard(LEADERBOARD1, newScore, gsClient.getGameServiceId());
 		try {
 			Gdx.app.log("MYLOG","start showing leaderboard, arg="+LEADERBOARD1);
@@ -769,13 +774,14 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 		drawCells(shapeRenderer);
 		//shapeRenderer.setColor(new Color(0.0f,0.8f,0.99f,0f));
 		//shapeRenderer.rect(0,0,WIDTH,HEIGHT);//draw a rect the size of the screen
-		shapeRenderer.end();
+        drawSymbolActorsShape(symbolActorListBottom);
+        drawSymbolActorsShape(symbolActorListTop);
+        shapeRenderer.end();
 		Gdx.gl.glDisable(GL20.GL_BLEND);
 		shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 		shapeRenderer.setColor(new Color(0.99f,0.8f,0.8f,0f));
 		shapeRenderer.rect(0,HEIGHT/2-(2*UH)/2,WIDTH,2*UH);//draw the mid line across the screen
-		drawSymbolActorsShape(symbolActorListBottom);
-		drawSymbolActorsShape(symbolActorListTop);
+
 		shapeRenderer.end();
 
 		gameStage.act(Math.min(Gdx.graphics.getDeltaTime(),1/30f));
@@ -783,11 +789,11 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 		if(timerPlaying)
 		{
 			timer=timer-Gdx.graphics.getDeltaTime();
-		}
-		if(timer<=0)
-		{
-			timerPlaying=false;
-			gameOver();
+			if(score==7)
+			{
+				timerPlaying=false;
+				gameOver();
+			}
 		}
 		if(disableTouchTimer>0)
 		{
@@ -796,6 +802,7 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 		batch.begin();
 		drawSymbolActorsFont(symbolActorListBottom);
 		drawSymbolActorsFont(symbolActorListTop);
+		/*
 		drawScore();
 		drawTimer();
 		font.draw(batch,""+neighbourArray,10f*UW,HEIGHT/2f+10*UH);
@@ -804,6 +811,7 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 		font.draw(batch,""+spawnChanceMin,10f*UW,HEIGHT/2f+40*UH);
 		font.draw(batch,""+spawnChanceMax,10f*UW,HEIGHT/2f+50*UH);
 		font.draw(batch,""+symbolActorListTop.size(),10f*UW,HEIGHT/2f-10*UH);
+		*/
 		batch.end();
 		spawnChanceMod=osc(oscDuration,0,0,timer*1000);
 		if(cellRun&&timerPlaying)
