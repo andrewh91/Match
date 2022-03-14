@@ -766,7 +766,7 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 
 //		stage.act(Math.min(Gdx.graphics.getDeltaTime(),1/30f));
 //		stage.draw();
-		Gdx.gl.glClearColor(0.99f, 0.99f, 0.8f, 0);
+		Gdx.gl.glClearColor(0.8f, 0.8f, 0.8f, 0);
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 		/*this allows transparent shapes*/
 		Gdx.gl.glEnable(GL20.GL_BLEND);Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
@@ -774,22 +774,19 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 		drawCells(shapeRenderer);
 		//shapeRenderer.setColor(new Color(0.0f,0.8f,0.99f,0f));
 		//shapeRenderer.rect(0,0,WIDTH,HEIGHT);//draw a rect the size of the screen
+		shapeRenderer.setColor(new Color(0.8f,0.8f,0.8f,0.2f));
         drawSymbolActorsShape(symbolActorListBottom);
         drawSymbolActorsShape(symbolActorListTop);
+		shapeRenderer.rect(0,HEIGHT/2-(2*UH)/2,WIDTH,2*UH);//draw the mid line across the screen
         shapeRenderer.end();
 		Gdx.gl.glDisable(GL20.GL_BLEND);
-		shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-		shapeRenderer.setColor(new Color(0.99f,0.8f,0.8f,0f));
-		shapeRenderer.rect(0,HEIGHT/2-(2*UH)/2,WIDTH,2*UH);//draw the mid line across the screen
-
-		shapeRenderer.end();
 
 		gameStage.act(Math.min(Gdx.graphics.getDeltaTime(),1/30f));
 		gameStage.draw();
 		if(timerPlaying)
 		{
 			timer=timer-Gdx.graphics.getDeltaTime();
-			if(score==7)
+			if(score==7||timer<=0)
 			{
 				timerPlaying=false;
 				gameOver();
@@ -923,6 +920,7 @@ public class MyGdxGame extends ApplicationAdapter implements IGameServiceListene
 	@Override
 	public void pause(){
 		super.pause();
+		resetGame();
 		gsClient.pauseSession();
 	}
 	@Override
